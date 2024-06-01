@@ -26,13 +26,15 @@ class HJDB {
     this.dbCacheCount.set(db, cnt);
 
     if (cnt % 10 == 0) {
-      this.checkpoint(db);
+      this.checkpoint(db).then(() =>
+        console.log(`db:${db} checkpoint complate.`)
+      );
     }
   }
 
-  private checkpoint(db: string) {
+  private async checkpoint(db: string) {
     const dbPath = `/data/${db}.json`;
-    Deno.writeTextFileSync(
+    await Deno.writeTextFile(
       dbPath,
       JSON.stringify(this.dbCache.get(db)),
     );
@@ -47,6 +49,7 @@ function jsonResponse(body: object) {
     headers: { "Content-Type": "application/json" },
   });
 }
+
 async function serveHandler(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url);
 
