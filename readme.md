@@ -5,7 +5,7 @@ each db is a json file
 ## Running
 
 ```sh
-docker run -d hjdb -p8000:8000 -v /data:/tmp/data shinhwagk/hjdb:latest
+docker run -d --name hjdb -p8000:8000 -v /tmp/data:/data shinhwagk/hjdb:latest
 
 # update/insert db data
 curl -XPOST http://localhost:8000/db/db1 -d '{"a":"dfdf2"}'
