@@ -1,68 +1,78 @@
-import { existsSync } from "https://deno.land/std/fs/mod.ts";
+import { existsSync } from "https://deno.land/std@0.224.0/fs/mod.ts";
 
-class JDB {
-  private readonly dbcache: Map<string, any> = new Map();
-  private readonly dbcache_cnt: Map<string, number> = new Map();
+class HJDB {
+  private readonly dbCache: Map<string, object> = new Map();
+  private readonly dbCacheCount: Map<string, number> = new Map();
 
   public query(db: string) {
-    if (this.dbcache.has(db)) {
-      return this.dbcache.get(db);
-    } else {
-      if (existsSync(`${db}.json`)) {
-        const dbcache = JSON.parse(Deno.readTextFileSync(`${db}.json`));
-        this.dbcache.set(db, dbcache);
-        return dbcache;
-      } else {
-        return {};
-      }
+    if (this.dbCache.has(db)) {
+      return this.dbCache.get(db);
     }
+
+    const dbPath = `/data/${db}.json`;
+
+    if (existsSync(dbPath)) {
+      const dbcache = JSON.parse(Deno.readTextFileSync(dbPath));
+      this.dbCache.set(db, dbcache);
+      return dbcache;
+    }
+
+    return {};
   }
 
-  public update(db: string, content: any) {
-    this.dbcache.set(db, content);
-    const cnt = this.dbcache_cnt.has(db) ? this.dbcache_cnt.get(db)! : 0;
-    this.dbcache_cnt.set(db, cnt + 1);
-    this.checkpoint(db);
+  public update(db: string, content: object) {
+    this.dbCache.set(db, content);
+    const cnt = (this.dbCacheCount.get(db) || 0) + 1;
+    this.dbCacheCount.set(db, cnt);
+
+    if (cnt % 10 == 0) {
+      this.checkpoint(db);
+    }
   }
 
   private checkpoint(db: string) {
-    if (this.dbcache_cnt.get(db)! % 10 == 0) {
-      Deno.writeTextFileSync(
-        `${db}.json`,
-        JSON.stringify(this.dbcache.get(db)),
-      );
-    }
+    const dbPath = `/data/${db}.json`;
+    Deno.writeTextFileSync(
+      dbPath,
+      JSON.stringify(this.dbCache.get(db)),
+    );
   }
 }
 
-const jdb = new JDB();
+const hjdb = new HJDB();
 
-async function serveHandler(request: Request): Promise<Response> {
-  const { pathname } = new URL(request.url);
-  const headers = new Headers({ "Content-Type": "application/json" });
-
-  let errmsg = "";
-  if (pathname.startsWith("/db/")) {
-    const dbname = pathname.substring(4);
-    if (dbname.length == 0) {
-      errmsg = "db name is emty.";
-    }
-    if (request.method === "GET") {
-      const responseObj = { state: "ok", db: dbname, data: jdb.query(dbname) };
-      return new Response(JSON.stringify(responseObj), { headers });
-    } else if (request.method === "POST") {
-      jdb.update(dbname, await request.json());
-      const responseObj = { state: "ok" };
-      return new Response(JSON.stringify(responseObj), { headers });
-    } else {
-      errmsg = "unknow";
-    }
-  }
-
-  return new Response(JSON.stringify({ state: "err", message: errmsg }), {
-    headers,
+function jsonResponse(body: object) {
+  return new Response(JSON.stringify(body), {
     status: 200,
+    headers: { "Content-Type": "application/json" },
   });
 }
+async function serveHandler(request: Request): Promise<Response> {
+  const { pathname } = new URL(request.url);
 
-Deno.serve(serveHandler);
+  if (pathname.startsWith("/db/")) {
+    const dbname = pathname.substring(4);
+
+    try {
+      if (request.method === "GET") {
+        return jsonResponse({
+          state: "ok",
+          db: dbname,
+          data: hjdb.query(dbname),
+        });
+      } else if (request.method === "POST") {
+        hjdb.update(dbname, await request.json());
+        return jsonResponse({ state: "ok" });
+      }
+    } catch (err) {
+      return jsonResponse({
+        state: "err",
+        message: "Error processing request: " + err.message,
+      });
+    }
+  }
+
+  return jsonResponse({ state: "err", message: "Unknown error." });
+}
+
+Deno.serve({ port: 8000 }, serveHandler);
