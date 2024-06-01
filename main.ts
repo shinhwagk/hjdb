@@ -2,7 +2,6 @@ import { existsSync } from "https://deno.land/std@0.224.0/fs/mod.ts";
 
 class HJDB {
   private readonly dbCache: Map<string, object> = new Map();
-  // private readonly dbCacheCount: Map<string, number> = new Map();
   private readonly dbCachePin: Set<string> = new Set();
 
   constructor() {
