@@ -40,7 +40,7 @@ class HJDB {
         console.log(`${new Date().toLocaleString()} checkpoint db ${db}`);
       }
       this.dbCachePin.clear();
-      await (new Promise((resolve) => setTimeout(resolve, 1000)));
+      await new Promise((f) => setTimeout(f, 1000));
     }
   }
 }
