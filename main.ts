@@ -2,7 +2,12 @@ import { existsSync } from "https://deno.land/std@0.224.0/fs/mod.ts";
 
 class HJDB {
   private readonly dbCache: Map<string, object> = new Map();
-  private readonly dbCacheCount: Map<string, number> = new Map();
+  // private readonly dbCacheCount: Map<string, number> = new Map();
+  private readonly dbCachePin: Set<string> = new Set();
+
+  constructor() {
+    this.checkpoint();
+  }
 
   public query(db: string) {
     if (this.dbCache.has(db)) {
@@ -22,22 +27,22 @@ class HJDB {
 
   public update(db: string, content: object) {
     this.dbCache.set(db, content);
-    const cnt = (this.dbCacheCount.get(db) || 0) + 1;
-    this.dbCacheCount.set(db, cnt);
-
-    if (cnt % 10 == 0) {
-      this.checkpoint(db).then(() =>
-        console.log(`db:${db} checkpoint complate.`)
-      );
-    }
+    this.dbCachePin.add(db);
   }
 
-  private async checkpoint(db: string) {
-    const dbPath = `/data/${db}.json`;
-    await Deno.writeTextFile(
-      dbPath,
-      JSON.stringify(this.dbCache.get(db)),
-    );
+  private async checkpoint() {
+    while (true) {
+      for (const db of this.dbCachePin.values()) {
+        const dbPath = `/data/${db}.json`;
+        await Deno.writeTextFile(
+          dbPath,
+          JSON.stringify(this.dbCache.get(db)),
+        );
+        console.log(`${new Date().toLocaleString()} checkpoint db ${db}`);
+      }
+      this.dbCachePin.clear();
+      await (new Promise((resolve) => setTimeout(resolve, 1000)));
+    }
   }
 }
 
