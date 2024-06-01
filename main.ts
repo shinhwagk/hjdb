@@ -43,7 +43,14 @@ class HJDB {
 
 const hjdb = new HJDB();
 
-function jsonResponse(body: object) {
+interface jsonResponseData {
+  state: "ok" | "err";
+  data: object | null;
+  db: string | null;
+  err: string | null;
+}
+
+function jsonResponse(body: jsonResponseData) {
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: { "Content-Type": "application/json" },
@@ -62,20 +69,28 @@ async function serveHandler(request: Request): Promise<Response> {
           state: "ok",
           db: dbname,
           data: hjdb.query(dbname),
+          err: null,
         });
       } else if (request.method === "POST") {
         hjdb.update(dbname, await request.json());
-        return jsonResponse({ state: "ok" });
+        return jsonResponse({ state: "ok", db: dbname, err: null, data: null });
       }
     } catch (err) {
       return jsonResponse({
         state: "err",
-        message: "Error processing request: " + err.message,
+        data: null,
+        db: dbname,
+        err: "Error processing request: " + err.message,
       });
     }
   }
 
-  return jsonResponse({ state: "err", message: "Unknown error." });
+  return jsonResponse({
+    state: "err",
+    err: "Unknown error.",
+    db: null,
+    data: null,
+  });
 }
 
 Deno.serve({ port: 8000 }, serveHandler);
