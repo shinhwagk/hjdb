@@ -24,6 +24,11 @@ class HJDB {
     return {};
   }
 
+  public delete(db: string) {
+    this.dbCache.delete(db);
+    Deno.removeSync(`/data/${db}.json`);
+  }
+
   public update(db: string, content: object) {
     this.dbCache.set(db, content);
     this.dbCachePin.add(db);
@@ -54,7 +59,7 @@ interface jsonResponseData {
   err: string | null;
 }
 
-function jsonResponse(body: jsonResponseData) {
+function jsonResponse(body: jsonResponseData): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: { "Content-Type": "application/json" },
@@ -77,6 +82,9 @@ async function serveHandler(request: Request): Promise<Response> {
         });
       } else if (request.method === "POST") {
         hjdb.update(dbname, await request.json());
+        return jsonResponse({ state: "ok", db: dbname, err: null, data: null });
+      } else if (request.method === "DELETE") {
+        hjdb.delete(dbname);
         return jsonResponse({ state: "ok", db: dbname, err: null, data: null });
       }
     } catch (err) {
