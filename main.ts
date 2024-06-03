@@ -30,9 +30,6 @@ class HJDB {
   }
 
   public update(db: string, tab: string, content: object) {
-    if (!existsSync(`/data/${db}`)) {
-      Deno.mkdirSync(`/data/${db}`);
-    }
     this.dbCache.set(`/data/${db}/${tab}.json`, content);
     this.dbCachePin.add(`/data/${db}/${tab}.json`);
   }
@@ -41,6 +38,13 @@ class HJDB {
     while (true) {
       for (const dbtabpath of this.dbCachePin.values()) {
         const data = JSON.stringify(this.dbCache.get(dbtabpath));
+
+        const parts = dbtabpath.split("/");
+
+        if (!existsSync(`/data/${parts[2]}`)) {
+          Deno.mkdirSync(`/data/${parts[2]}`);
+        }
+
         await Deno.writeTextFile(
           dbtabpath,
           data,
