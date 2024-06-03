@@ -42,6 +42,7 @@ class HJDB {
         const parts = dbtabpath.split("/");
 
         if (!existsSync(`/data/${parts[2]}`)) {
+          console.log("create directory " + `/data/${parts[2]}`);
           Deno.mkdirSync(`/data/${parts[2]}`);
         }
 
