@@ -1,6 +1,6 @@
 import { existsSync } from "https://deno.land/std@0.224.0/fs/mod.ts";
 
-class HJDB {
+class FileDB {
   private readonly dbCache: Map<string, object> = new Map();
   private readonly dbCachePin: Set<string> = new Set();
 
@@ -21,7 +21,7 @@ class HJDB {
       return dbcache;
     }
 
-    return {};
+    return null;
   }
 
   public delete(db: string, tab: string) {
@@ -53,7 +53,9 @@ class HJDB {
         console.log(
           `${
             new Date().toLocaleString()
-          } checkpoint dbtab:' ${dbtabpath}' data: '${data}'`,
+          } checkpoint storge:'file', dbtab:' ${dbtabpath}' content: '${
+            JSON.stringify(data)
+          }'`,
         );
       }
       this.dbCachePin.clear();
@@ -62,7 +64,39 @@ class HJDB {
   }
 }
 
-const hjdb = new HJDB();
+class MemDB {
+  private readonly dbCache: Map<string, object> = new Map();
+  private readonly dbCachePin: Set<string> = new Set();
+
+  public query(db: string, tab: string) {
+    const dbtabpath = `${db}@${tab}`;
+
+    if (this.dbCache.has(dbtabpath)) {
+      return this.dbCache.get(dbtabpath);
+    }
+
+    return null;
+  }
+
+  public update(db: string, tab: string, content: object) {
+    this.dbCache.set(`${db}@${tab}`, content);
+    this.dbCachePin.add(`${db}@${tab}`);
+    console.log(
+      `${
+        new Date().toLocaleString()
+      } checkpoint storge:'memory', db:'${db}', tab:'${tab}' content: '${
+        JSON.stringify(content)
+      }'`,
+    );
+  }
+
+  public delete(db: string, tab: string) {
+    this.dbCache.delete(`${db}@${tab}`);
+  }
+}
+
+const filedb = new FileDB();
+const memdb = new MemDB();
 
 interface jsonResponseData {
   state: "ok" | "err";
@@ -70,6 +104,7 @@ interface jsonResponseData {
   db: string | null;
   tab: string | null;
   err: string | null;
+  store: "file" | "memory" | null;
 }
 
 function jsonResponse(body: jsonResponseData): Response {
@@ -84,51 +119,62 @@ async function serveHandler(request: Request): Promise<Response> {
 
   const parts = pathname.split("/");
 
+  // /db/dbname/tab/tabname/store/file
   if (
-    parts.length == 5 &&
+    parts.length == 7 &&
     parts[1] == "db" &&
     parts[3] == "tab" &&
+    parts[5] == "store" &&
     parts[2].length >= 1 &&
-    parts[4].length >= 1
+    parts[4].length >= 1 &&
+    ["file", "memory"].includes(parts[6])
   ) {
-    const dbname = parts[2];
-    const tabname = parts[4];
+    const db = parts[2];
+    const tab = parts[4];
+    const store = parts[6] as "file" | "memory";
+
+    const dbms = parts[4] === "file" ? filedb : memdb;
 
     try {
       if (request.method === "GET") {
         return jsonResponse({
           state: "ok",
-          db: dbname,
-          tab: tabname,
-          data: hjdb.query(dbname, tabname),
+          db: db,
+          tab: tab,
+          data: dbms.query(db, tab),
           err: null,
+          store: store,
         });
       } else if (request.method === "POST") {
-        hjdb.update(dbname, tabname, await request.json());
+        dbms.update(db, tab, await request.json());
+
         return jsonResponse({
           state: "ok",
-          db: dbname,
-          tab: tabname,
+          db: db,
+          tab: tab,
           err: null,
           data: null,
+          store: store,
         });
       } else if (request.method === "DELETE") {
-        hjdb.delete(dbname, tabname);
+        dbms.delete(db, tab);
         return jsonResponse({
           state: "ok",
-          db: dbname,
-          tab: tabname,
+          db: db,
+          tab: tab,
           err: null,
           data: null,
+          store: store,
         });
       }
     } catch (err) {
       return jsonResponse({
         state: "err",
         data: null,
-        db: dbname,
-        tab: tabname,
+        db: db,
+        tab: tab,
         err: "Error processing request: " + err.message,
+        store: store,
       });
     }
   }
@@ -139,6 +185,7 @@ async function serveHandler(request: Request): Promise<Response> {
     db: null,
     tab: null,
     data: null,
+    store: null,
   });
 }
 

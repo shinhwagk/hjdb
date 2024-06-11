@@ -8,10 +8,10 @@ each db is a json file
 docker run -d --name hjdb -p8000:8000 -v /tmp/data:/data shinhwagk/hjdb:latest
 
 # update/insert db data
-curl -XPOST http://localhost:8000/db/db1/tab/tab1 -d '{"a":"dfdf2"}'
+curl -XPOST http://localhost:8000/db/db1/tab/tab1/store/memory -d '{"a":"dfdf2"}'
 # responce {"state":"ok","db":"db1","err":null,"data":null}
 
 # get db data
-curl -XGET http://localhost:8000/db/db1/tab/tab1
+curl -XGET http://localhost:8000/db/db1/tab/tab1/store/memory
 # responce {"state":"ok","db":"db1","data":{"a":"dfdf2"},"err":null}
 ```

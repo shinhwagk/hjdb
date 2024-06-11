@@ -1,2 +1,5 @@
 #!/bin/bash
-docker build -t shinhwagk/hjdb:latest .
+version=`cat version`
+docker build -t shinhwagk/hjdb:${version} .
+
+docker push shinhwagk/hjdb:${version}

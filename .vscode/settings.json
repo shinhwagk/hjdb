@@ -1,5 +1,5 @@
 {
     "deno.enable": true,
     "editor.formatOnSave": true,
-    "editor.insertSpaces": true
+    "editor.insertSpaces": true,
 }
