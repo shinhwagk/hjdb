@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+  },
+  "files": [
+    "main.js",
+    "memdb.js",
+    "filedb.js",
+    "types.ts",
+  ]
+}
