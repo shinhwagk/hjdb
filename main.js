@@ -4,6 +4,8 @@ const http = require('http');
 
 const MemDB = require('./memdb');
 const FileDB = require('./filedb');
+const Metric = require('./metric');
+
 
 /**
  * @typedef {import('./types').ResponseData} ResponseData
@@ -33,11 +35,15 @@ function readReqBody(req) {
 const filedb = new FileDB('/var/lib/hjdb');
 const memdb = new MemDB();
 
+const metric = new Metric();
+
+
 /**
  * @param {http.IncomingMessage} req 
  * @param {http.ServerResponse} res 
  */
 const handleMetric = async (req, res) => {
+  memdb.dbCache
 }
 
 /**
@@ -73,16 +79,20 @@ const handleRequest = async (req, res) => {
       case 'GET':
         const sf = dbms.query(db, tab)
         if (sf) {
-          return sendResp(res, { state: 'ok', ...sf });
+          sendResp(res, { state: 'ok', ...sf });
+          metric.inc('query', db, tab, 1)
+          return
         } else {
           return sendResp(res, { state: 'err', err: "table not exist." });
         }
       case 'POST':
         const data = await readReqBody(req)
         dbms.update(db, tab, JSON.parse(data));
+        metric.inc('update', db, tab, 1)
         return sendResp(res, { state: 'ok' });
       case 'DELETE':
         dbms.delete(db, tab);
+        metric.inc('delete', db, tab, 1)
         return sendResp(res, { state: 'ok' });
       default:
         return sendResp(res, { state: 'err', err: 'Method Not Allowed' });

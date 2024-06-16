@@ -10,7 +10,7 @@ export interface ResponseData {
   db?: string
   tab?: string
   err?: string
-  store?: "file" | "mem"
+  store?: "file" | "memory"
   cts?: number
   mts?: number
 }
