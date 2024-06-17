@@ -9,7 +9,8 @@ export interface ResponseData {
   data?: Object
   db?: string
   tab?: string
-  err?: string
+  errmsg?: string
+  errcode?: string
   store?: "file" | "memory"
   cts?: number
   mts?: number

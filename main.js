@@ -53,12 +53,12 @@ const handleMetric = async (res) => {
 const handleHJDB = async (req, res) => {
   const parts = req.url?.split('/').filter(p => p);
   if (parts === undefined || parts.length !== 3) {
-    return sendResp(res, { state: 'err', err: 'Invalid URL path' });
+    return sendResp(res, { state: 'err', errmsg: 'Invalid URL path' });
   }
 
   const [store, db, tab] = parts;
   if (!["file", "memory"].includes(store)) {
-    return sendResp(res, { state: 'err', err: 'Invalid store type' });
+    return sendResp(res, { state: 'err', errmsg: 'Invalid store type' });
   }
 
   const dbms = store === "file" ? filedb : memdb;
@@ -73,7 +73,7 @@ const handleHJDB = async (req, res) => {
           metric.inc('query', store, db, tab, 1)
           return
         } else {
-          return sendResp(res, { state: 'err', err: "table not exist." });
+          return sendResp(res, { state: 'err', errmsg: "table not exist.", errcode: 'hjdb-001' });
         }
       case 'POST':
         const data = await readReqBody(req)
@@ -87,10 +87,10 @@ const handleHJDB = async (req, res) => {
         metric.inc('delete', store, db, tab, 1)
         return sendResp(res, { state: 'ok' });
       default:
-        return sendResp(res, { state: 'err', err: 'Method Not Allowed' });
+        return sendResp(res, { state: 'err', errmsg: 'Method Not Allowed' });
     }
   } catch (e) {
-    return sendResp(res, { state: 'err', err: `${e}` });
+    return sendResp(res, { state: 'err', errmsg: `${e}` });
   }
 }
 
@@ -100,7 +100,7 @@ const handleHJDB = async (req, res) => {
  */
 const handleRequest = async (req, res) => {
   if (!req.url || !req.method) {
-    return sendResp(res, { state: 'err', err: 'Bad request' });
+    return sendResp(res, { state: 'err', errmsg: 'Bad request' });
   }
 
   if (req.url === '/metrics') {
@@ -108,7 +108,7 @@ const handleRequest = async (req, res) => {
   } else if (req.url.startsWith('/file/') || req.url.startsWith('/memory/')) {
     return handleHJDB(req, res);
   } else {
-    sendResp(res, { state: 'err', err: 'Not found' });
+    sendResp(res, { state: 'err', errmsg: 'Not found' });
   }
 
 }
