@@ -4,7 +4,7 @@ const http = require('http');
 
 const MemDB = require('./memdb');
 const FileDB = require('./filedb');
-const Metric = require('./metric');
+const PromMetric = require('./metric');
 
 
 /**
@@ -35,15 +35,15 @@ function readReqBody(req) {
 const filedb = new FileDB('/var/lib/hjdb');
 const memdb = new MemDB();
 
-const metric = new Metric();
+const metric = new PromMetric();
 
 
 /**
- * @param {http.IncomingMessage} req 
  * @param {http.ServerResponse} res 
  */
-const handleMetric = async (req, res) => {
-  memdb.dbCache
+const handleMetric = async (res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end(metric.metrics());
 }
 
 /**
@@ -51,19 +51,8 @@ const handleMetric = async (req, res) => {
  * @param {http.ServerResponse} res 
  */
 const handleHJDB = async (req, res) => {
-}
-
-/**
- * @param {http.IncomingMessage} req 
- * @param {http.ServerResponse} res 
- */
-const handleRequest = async (req, res) => {
-  if (!req.url || !req.method) {
-    return sendResp(res, { state: 'err', err: 'Bad request' });
-  }
-
-  const parts = req.url.split('/').filter(p => p);
-  if (parts.length !== 3) {
+  const parts = req.url?.split('/').filter(p => p);
+  if (parts === undefined || parts.length !== 3) {
     return sendResp(res, { state: 'err', err: 'Invalid URL path' });
   }
 
@@ -80,7 +69,8 @@ const handleRequest = async (req, res) => {
         const sf = dbms.query(db, tab)
         if (sf) {
           sendResp(res, { state: 'ok', ...sf });
-          metric.inc('query', db, tab, 1)
+          // @ts-ignore
+          metric.inc('query', store, db, tab, 1)
           return
         } else {
           return sendResp(res, { state: 'err', err: "table not exist." });
@@ -88,11 +78,13 @@ const handleRequest = async (req, res) => {
       case 'POST':
         const data = await readReqBody(req)
         dbms.update(db, tab, JSON.parse(data));
-        metric.inc('update', db, tab, 1)
+        // @ts-ignore
+        metric.inc('update', store, db, tab, 1)
         return sendResp(res, { state: 'ok' });
       case 'DELETE':
         dbms.delete(db, tab);
-        metric.inc('delete', db, tab, 1)
+        // @ts-ignore
+        metric.inc('delete', store, db, tab, 1)
         return sendResp(res, { state: 'ok' });
       default:
         return sendResp(res, { state: 'err', err: 'Method Not Allowed' });
@@ -100,6 +92,25 @@ const handleRequest = async (req, res) => {
   } catch (e) {
     return sendResp(res, { state: 'err', err: `${e}` });
   }
+}
+
+/**
+ * @param {http.IncomingMessage} req 
+ * @param {http.ServerResponse} res 
+ */
+const handleRequest = async (req, res) => {
+  if (!req.url || !req.method) {
+    return sendResp(res, { state: 'err', err: 'Bad request' });
+  }
+
+  if (req.url === '/metrics') {
+    return handleMetric(res);
+  } else if (req.url.startsWith('/file/') || req.url.startsWith('/memory/')) {
+    return handleHJDB(req, res);
+  } else {
+    sendResp(res, { state: 'err', err: 'Not found' });
+  }
+
 }
 
 http.createServer(handleRequest).listen(8000, () => {
