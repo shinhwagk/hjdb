@@ -4,12 +4,18 @@ export class Metric {
   metricTabUpdate = new Map<string, number>()
   metricTabQuery = new Map<string, number>()
   metricTabDelete = new Map<string, number>()
+  metricError = 0
+
 
   public inc(type: 'update' | 'query' | 'delete', store: DBStore, db: string, tab: string, val: number) {
     const key = `${store}@${db}@${tab}`;
     const map = this._getMap(type);
     const currentVal = map.get(key) || 0;
     map.set(key, currentVal + val);
+  }
+
+  public incErr() {
+    this.metricError += 1
   }
 
   private _getMap(type: 'update' | 'query' | 'delete'): Map<string, number> {
@@ -37,11 +43,22 @@ export class Metric {
     return metricLines
   }
 
+  private formatErrorMetric() {
+    if (this.metricError >= 1) {
+      return [
+        `# HELP hjdb_error Total number of hjdb_error operations`,
+        `# TYPE hjdb_errorcounter`,
+        `hjdb_error ${this.metricError}`
+      ]
+    } else { return [] }
+  }
+
   public metrics(): string {
     const metrics: string[] = [];
     metrics.push(...this.formatMetrics('hjdb_update', this.metricTabUpdate));
     metrics.push(...this.formatMetrics('hjdb_query', this.metricTabQuery));
     metrics.push(...this.formatMetrics('hjdb_delete', this.metricTabDelete));
+    metrics.push(...this.formatErrorMetric());
 
     return metrics.length >= 1 ? metrics.join("\n") + "\n" : "";
   }

@@ -18,9 +18,11 @@ export class FileDB extends MemDB {
   }
 
   delete(db: string, tab: string) {
-    super.query(db, tab)
     super.delete(db, tab);
-    fs.unlinkSync(path.join(this.dbDir, db, `${tab}.json`));
+    this.dbCachePin.delete(`${db}@${tab}`)
+    if (fs.existsSync(path.join(this.dbDir, db, `${tab}.json`))) {
+      fs.unlinkSync(path.join(this.dbDir, db, `${tab}.json`));
+    }
   }
 
   update(db: string, tab: string, data: object) {
@@ -29,8 +31,9 @@ export class FileDB extends MemDB {
   }
 
   async checkpoint(): Promise<void> {
+
     while (true) {
-      for (const dbtab of this.dbCachePin.keys()) {
+      for (const dbtab of this.dbCachePin) {
         const [db, tab] = dbtab.split("@")
         const content = this.dbsCache.get(db)?.get(tab)!;
         const dbdir = path.join(this.dbDir, db);

@@ -31,7 +31,15 @@ export class MemDB {
   }
 
   delete(db: string, tab: string) {
-    this.dbsCache.get(db)?.delete(tab);
+    if (this.dbsCache.get(db)) {
+      if (this.dbsCache.get(db)?.get(tab)) {
+        this.dbsCache.get(db)?.delete(tab);
+      } else {
+        throw HJDBError.new(HJDBErrorCode.HJDB001);
+      }
+    } else {
+      throw HJDBError.new(HJDBErrorCode.HJDB002);
+    }
   }
 
   update(db: string, tab: string, data: object) {
