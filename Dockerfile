@@ -10,7 +10,7 @@ RUN npm run compile
 
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=builder /build/out/*.js .
+COPY --from=builder /build/dist/*.js .
 
 VOLUME /var/lib/hjdb
 EXPOSE 8000
