@@ -1,7 +1,8 @@
 #!/bin/bash
 VERSION=`cat version`
 
-for plat in linux/amd64 linux/arm64; do
+for plat in linux/amd64; do
+  echo "build platform: ${plat}"
   docker build --platform $plat -t shinhwagk/hjdb:${VERSION} .
   docker tag shinhwagk/hjdb:${VERSION} shinhwagk/hjdb:latest
 

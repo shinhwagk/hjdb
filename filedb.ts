@@ -3,59 +3,35 @@
 const fs = require('fs');
 const path = require('path');
 
-const MemDB = require('./memdb');
+import { MemDB } from "./memdb"
 
-/**
- * @typedef {import('./types').StoreFormat} StoreFormat
- */
+import { StoreFormat } from "./types"
 
-class FileDB extends MemDB {
-  /** @type {Set<string>} */
-  dbCachePin = new Set()
-  dbDir;
 
-  /**
-   * @param {string} dbDir;
-   */
-  constructor(dbDir) {
+export class FileDB extends MemDB {
+  private readonly dbCachePin = new Set<string>()
+
+  constructor(private readonly dbDir: string) {
     super();
-    this.dbDir = dbDir;
     this.loadData();
     this.checkpoint();
   }
 
-  /**
-   * @param {string} db;
-   * @param {string} tab;
-   * @returns {StoreFormat | null}
-   */
-  query(db, tab) {
+  query(db: string, tab: string): StoreFormat | null {
     return super.query(db, tab);
   }
 
-  /**
-   * @param {string} db;
-   * @param {string} tab;
-   */
-  delete(db, tab) {
+  delete(db: string, tab: string) {
     super.delete(db, tab);
     fs.unlinkSync(path.join(this.dbDir, db, `${tab}.json`));
   }
 
-  /**
-   * @param {string} db
-   * @param {string} tab
-   * @param {object} data
-   */
-  update(db, tab, data) {
+  update(db: string, tab: string, data: object) {
     super.update(db, tab, data);
     this.dbCachePin.add(`${db}@${tab}`);
   }
 
-  /**
-   * @returns { Promise<void>}
-   */
-  async checkpoint() {
+  async checkpoint(): Promise<void> {
     while (true) {
       for (const dbtab of this.dbCachePin) {
         const data = JSON.stringify(this.dbCache.get(dbtab));
@@ -80,8 +56,7 @@ class FileDB extends MemDB {
           if (table.isFile() && table.name.endsWith('.json')) {
             const filePath = path.join(dbPath, table.name);
             const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
-            /** @type {StoreFormat} */
-            const parsedData = JSON.parse(data);
+            const parsedData = JSON.parse(data) as StoreFormat;
             const key = `${db.name}@${path.basename(table.name, '.json')}`;
             this.dbCache.set(key, parsedData);
           }
@@ -90,5 +65,3 @@ class FileDB extends MemDB {
     }
   }
 }
-
-module.exports = FileDB
