@@ -101,7 +101,6 @@ async function handleTableOperations(req: http.IncomingMessage, res: http.Server
   }
 }
 
-
 const handleRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   if (!req.url || !req.method) {
     return sendError(res, new Error('Bad request'))
@@ -114,9 +113,8 @@ const handleRequest = async (req: http.IncomingMessage, res: http.ServerResponse
   } else {
     return sendError(res, new Error('Not found'))
   }
-
 }
 
 http.createServer(handleRequest).listen(8000, () => {
-  console.log('Server running on http://localhost:8000');
+  console.log('Server running on http://:8000');
 });
