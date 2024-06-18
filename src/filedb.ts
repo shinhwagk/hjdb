@@ -42,15 +42,17 @@ export class FileDB extends MemDB {
     while (true) {
       for (const dbtab of this.dbCachePin) {
         const [db, tab] = dbtab.split("@")
-        const content = this.dbsCache.get(db)?.get(tab)!;
-        const dbdir = path.join(this.dbDir, db);
-        if (!fs.existsSync(dbdir)) {
-          fs.mkdirSync(dbdir, { recursive: true });
+        if (this.dbsCache.get(db)?.get(tab)){
+            const content =  this.dbsCache.get(db)?.get(tab);
+            const dbdir = path.join(this.dbDir, db);
+            if (!fs.existsSync(dbdir)) {
+         fs.mkdirSync(dbdir, { recursive: true });
+            }
+            const data = JSON.stringify(content);
+            fs.writeFileSync(path.join(dbdir, `${tab}.json`), data, { encoding: 'utf-8' });
+            console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', tab:'${tab}', content: '${data}'`);
+          }
         }
-        const data = JSON.stringify(content);
-        fs.writeFileSync(path.join(dbdir, `${tab}.json`), data, { encoding: 'utf-8' });
-        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', tab:'${tab}', content: '${data}'`);
-      }
       this.dbCachePin.clear();
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -60,7 +62,7 @@ export class FileDB extends MemDB {
     for (const db of fs.readdirSync(this.dbDir, { withFileTypes: true })) {
       if (db.isDirectory()) {
         const dbPath = path.join(this.dbDir, db.name);
-        const tablesMap = new Map<string, any>();
+        const tablesMap = new Map<string, object>();
 
         for (const table of fs.readdirSync(dbPath, { withFileTypes: true })) {
           if (table.isFile() && table.name.endsWith('.json')) {

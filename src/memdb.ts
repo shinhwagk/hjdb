@@ -1,6 +1,6 @@
 import { HJDBErrorCode, HJDBError } from "./error"
 import { validateName } from "./helper"
-import { ResponseData, DBStore } from "./types"
+import { DBStore } from "./types"
 
 
 export class MemDB {
@@ -17,7 +17,7 @@ export class MemDB {
 
   getTabs(db: string): string[] {
     if (this.dbsCache.get(db)) {
-      return [...this.dbsCache.get(db)?.keys()!]
+      return [...this.dbsCache.get(db)?.keys() || []]
     } else {
       throw HJDBError.new(HJDBErrorCode.HJDB002);
     }

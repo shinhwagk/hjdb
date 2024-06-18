@@ -2,6 +2,14 @@
     "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.wordWrapColumn": 80,
-    "eslint.workingDirectories": [ "./" ]
-
+    "eslint.workingDirectories": [
+        "./src"
+    ],
+    "eslint.format.enable": true,
+    "eslint.codeActionsOnSave.rules": [
+        "@typescript-eslint/*",
+    ],
+    "eslint.probe": [
+        "typescript"
+    ]
 }

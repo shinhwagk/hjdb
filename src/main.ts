@@ -5,7 +5,7 @@ import { FileDB } from "./filedb";
 import { Metric } from "./metric";
 
 import { ResponseData, DBStore } from "./types"
-import { HJDBError, HJDBErrorCode } from "./error"
+import { HJDBError } from "./error"
 
 function sendResp(res: http.ServerResponse, payload: ResponseData) {
   res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -25,7 +25,7 @@ function sendError(res: http.ServerResponse, e: unknown): void {
 }
 
 function readReqBody(req: http.IncomingMessage): Promise<string> {
-  return new Promise((res, _) => {
+  return new Promise((res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => { res(body); });
