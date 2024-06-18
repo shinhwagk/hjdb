@@ -14,7 +14,8 @@ on:
 
 jobs:
   build_and_release:
-    runs-on: ubuntu-latest  
+    runs-on: ubuntu-latest
+    environment: DOCKERHUB
 
     steps:
       - name: Checkout code
