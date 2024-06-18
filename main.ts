@@ -15,7 +15,7 @@ function sendResp(res: http.ServerResponse, payload: ResponseData) {
 }
 
 function sendError(res: http.ServerResponse, e: unknown): void {
-  metric.inc('query', store, db, tab, 1);
+  metric.incErr();
 
   if (e instanceof HJDBError) {
     return sendResp(res, { state: 'err', errmsg: e.message, errcode: e.errorCode });
