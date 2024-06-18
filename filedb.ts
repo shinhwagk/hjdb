@@ -2,7 +2,6 @@ import * as fs from "fs"
 import * as path from "path"
 
 import { MemDB } from "./memdb"
-import { StoreFormat } from "./types"
 
 export class FileDB extends MemDB {
   private readonly dbCachePin = new Set<string>()
@@ -13,7 +12,7 @@ export class FileDB extends MemDB {
     this.checkpoint();
   }
 
-  query(db: string, tab: string): StoreFormat {
+  query(db: string, tab: string): object {
     return super.query(db, tab);
   }
 
@@ -59,7 +58,7 @@ export class FileDB extends MemDB {
           if (table.isFile() && table.name.endsWith('.json')) {
             const filePath = path.join(dbPath, table.name);
             const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
-            const parsedData = JSON.parse(data) as StoreFormat;
+            const parsedData = JSON.parse(data) as object;
             const tableName = path.basename(table.name, '.json');
 
             tablesMap.set(tableName, parsedData);

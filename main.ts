@@ -83,7 +83,7 @@ async function handleTableOperations(req: http.IncomingMessage, res: http.Server
       const queryResult = dbms.query(db, tab);
       if (queryResult) {
         metric.inc('query', store, db, tab, 1);
-        return sendResp(res, { state: 'ok', ...queryResult });
+        return sendResp(res, { state: 'ok', data: queryResult });
       } else {
         return sendError(res, HJDBError.new(HJDBErrorCode.HJDB001));
       }

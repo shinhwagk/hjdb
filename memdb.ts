@@ -1,9 +1,8 @@
-import { StoreFormat } from "./types"
 import { HJDBErrorCode, HJDBError } from "./error"
 
 export class MemDB {
-  protected readonly dbsCache = new Map<string, Map<string, StoreFormat>>();
-  protected readonly dbTabsCache = new Map<string, StoreFormat>();
+  protected readonly dbsCache = new Map<string, Map<string, object>>();
+  protected readonly dbTabsCache = new Map<string, object>();
 
   getDbs() {
     return [...this.dbsCache.keys()]
@@ -17,7 +16,7 @@ export class MemDB {
     }
   }
 
-  query(db: string, tab: string): StoreFormat {
+  query(db: string, tab: string): object {
     if (this.dbsCache.get(db)) {
       const dbCache = this.dbsCache.get(db)!;
       if (dbCache.get(tab)) {
@@ -47,12 +46,6 @@ export class MemDB {
       this.dbsCache.set(db, new Map())
     }
 
-    if (this.dbsCache.get(db)?.get(tab)) {
-      this.dbsCache.get(db)!.get(tab)!.data = data
-      this.dbsCache.get(db)!.get(tab)!.mts = (new Date()).getTime();
-    } else {
-      const ts = (new Date()).getTime();
-      this.dbsCache.get(db)!.set(tab, { cts: ts, mts: ts, data: data })
-    }
+    this.dbsCache.get(db)!.set(tab, data)
   }
 }
