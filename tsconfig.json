@@ -8,11 +8,7 @@
     "moduleResolution": "node",
     "esModuleInterop": true
   },
-  "files": [
-    "main.ts",
-    "memdb.ts",
-    "filedb.ts",
-    "types.ts",
-    "metric.ts"
+  "include": [
+    "./src"
   ]
 }

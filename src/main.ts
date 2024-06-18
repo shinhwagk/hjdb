@@ -4,9 +4,8 @@ import { MemDB } from "./memdb";
 import { FileDB } from "./filedb";
 import { Metric } from "./metric";
 
-import { ResponseData } from "./types"
+import { ResponseData, DBStore } from "./types"
 import { HJDBError, HJDBErrorCode } from "./error"
-import { validateName } from "./helper"
 
 function sendResp(res: http.ServerResponse, payload: ResponseData) {
   res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -46,60 +45,53 @@ const handleHJDB = async (req: http.IncomingMessage, res: http.ServerResponse) =
   const parts = req.url?.split('/').filter(p => p);
   if (!parts) return sendError(res, new Error('Invalid request'));
 
-  const storeType = parts[0] as "file" | "memory";
+  const storeType = parts[0] as DBStore;
   if (!["file", "memory"].includes(storeType)) {
     return sendError(res, new Error('Invalid store type'));
   }
   const dbms = storeType === "file" ? filedb : memdb;
-
   try {
-    if (parts.length === 1) {
+    if (parts.length === 1 && req.method === "GET") {
       return sendResp(res, { state: 'ok', data: dbms.getDbs() });
     } else if (parts.length >= 2) {
-      const dbName = parts[1];
-      if (!validateName(dbName)) {
-        return sendError(res, HJDBError.new(HJDBErrorCode.HJDB003));
-      }
-
-      if (parts.length === 2) {
-        const tabs = dbms.getTabs(dbName);
+      const db = parts[1];
+      if (parts.length === 2 && req.method === "GET") {
+        const tabs = dbms.getTabs(db);
         return sendResp(res, { state: 'ok', data: tabs });
-      } else if (parts.length === 3) {
-        const tableName = parts[2];
-        if (!validateName(tableName)) {
-          return sendError(res, HJDBError.new(HJDBErrorCode.HJDB004));
-        }
-        return await handleTableOperations(req, res, dbms, storeType, dbName, tableName);
       }
+    } else if (parts.length === 3) {
+      const db = parts[1], tab = parts[2];
+      return await handleTableOperations(req, res, dbms, db, tab);
     }
   } catch (e) {
     return sendError(res, e);
   }
 }
 
-async function handleTableOperations(req: http.IncomingMessage, res: http.ServerResponse, dbms: MemDB, store: 'file' | "memory", db: string, tab: string) {
-  switch (req.method) {
-    case 'GET':
-      const queryResult = dbms.query(db, tab);
-      if (queryResult) {
-        metric.inc('query', store, db, tab, 1);
-        return sendResp(res, { state: 'ok', data: queryResult });
-      } else {
-        return sendError(res, HJDBError.new(HJDBErrorCode.HJDB001));
-      }
-    case 'POST':
-      const data = await readReqBody(req);
-      dbms.update(db, tab, JSON.parse(data));
-      metric.inc('update', store, db, tab, 1);
-      return sendResp(res, { state: 'ok' });
-    case 'DELETE':
-      dbms.delete(db, tab);
-      metric.inc('delete', store, db, tab, 1);
-      return sendResp(res, { state: 'ok' });
-    default:
-      return sendError(res, new Error('Method Not Allowed'));
+async function handleTableOperations(req: http.IncomingMessage, res: http.ServerResponse, dbms: MemDB, db: string, tab: string) {
+  try {
+    switch (req.method) {
+      case 'GET':
+        sendResp(res, { state: 'ok', data: dbms.query(db, tab) });
+        metric.inc('query', dbms.getStore(), db, tab, 1);
+        return
+      case 'POST':
+        const data = JSON.parse(await readReqBody(req));
+        dbms.update(db, tab, data);
+        sendResp(res, { state: 'ok' });
+        return metric.inc('update', dbms.getStore(), db, tab, 1);
+      case 'DELETE':
+        dbms.delete(db, tab);
+        sendResp(res, { state: 'ok' });
+        return metric.inc('delete', dbms.getStore(), db, tab, 1);
+      default:
+        new Error('Method Not Allowed');
+    }
+  } catch (e) {
+    return sendError(res, e);
   }
 }
+
 
 const handleRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   if (!req.url || !req.method) {

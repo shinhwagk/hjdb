@@ -2,6 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 import { MemDB } from "./memdb"
+import { DBStore } from "./types"
 
 export class FileDB extends MemDB {
   private readonly dbCachePin = new Set<string>()
@@ -10,6 +11,10 @@ export class FileDB extends MemDB {
     super();
     this.loadData();
     this.checkpoint();
+  }
+
+  getStore(): DBStore {
+    return 'file'
   }
 
   query(db: string, tab: string): object {
@@ -22,6 +27,10 @@ export class FileDB extends MemDB {
     if (fs.existsSync(path.join(this.dbDir, db, `${tab}.json`))) {
       fs.unlinkSync(path.join(this.dbDir, db, `${tab}.json`));
     }
+    if (!this.dbsCache.has(db)) {
+      fs.unlinkSync(path.join(this.dbDir, db))
+      console.log("tabs size == 0, rm db dir.")
+    }
   }
 
   update(db: string, tab: string, data: object) {
@@ -29,8 +38,7 @@ export class FileDB extends MemDB {
     this.dbCachePin.add(`${db}@${tab}`);
   }
 
-  async checkpoint(): Promise<void> {
-
+  private async checkpoint(): Promise<void> {
     while (true) {
       for (const dbtab of this.dbCachePin) {
         const [db, tab] = dbtab.split("@")
@@ -48,7 +56,7 @@ export class FileDB extends MemDB {
     }
   }
 
-  async loadData() {
+  private async loadData() {
     for (const db of fs.readdirSync(this.dbDir, { withFileTypes: true })) {
       if (db.isDirectory()) {
         const dbPath = path.join(this.dbDir, db.name);
