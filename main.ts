@@ -4,7 +4,6 @@ import { MemDB } from "./memdb";
 import { FileDB } from "./filedb";
 import { Metric } from "./metric";
 
-
 import { ResponseData } from "./types"
 import { HJDBError, HJDBErrorCode } from "./error"
 import { validateName } from "./helper"
@@ -45,7 +44,7 @@ const handleMetric = async (res: http.ServerResponse) => {
 
 const handleHJDB = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   const parts = req.url?.split('/').filter(p => p);
-  if (!parts) return sendResp(res, { state: 'err', errmsg: 'Invalid request' });
+  if (!parts) return sendError(res, new Error('Invalid request'));
 
   const storeType = parts[0] as "file" | "memory";
   if (!["file", "memory"].includes(storeType)) {
