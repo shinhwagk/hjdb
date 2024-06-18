@@ -7,6 +7,7 @@ RUN npm i
 COPY *.ts .
 RUN npm run compile
 
+######################################
 
 FROM node:22-alpine
 WORKDIR /app
