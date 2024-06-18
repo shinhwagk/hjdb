@@ -1,12 +1,8 @@
-// @ts-check
-
-const fs = require('fs');
-const path = require('path');
+import * as fs from "fs"
+import * as path from "path"
 
 import { MemDB } from "./memdb"
-
 import { StoreFormat } from "./types"
-
 
 export class FileDB extends MemDB {
   private readonly dbCachePin = new Set<string>()
@@ -17,11 +13,12 @@ export class FileDB extends MemDB {
     this.checkpoint();
   }
 
-  query(db: string, tab: string): StoreFormat | null {
+  query(db: string, tab: string): StoreFormat {
     return super.query(db, tab);
   }
 
   delete(db: string, tab: string) {
+    super.query(db, tab)
     super.delete(db, tab);
     fs.unlinkSync(path.join(this.dbDir, db, `${tab}.json`));
   }
@@ -33,15 +30,16 @@ export class FileDB extends MemDB {
 
   async checkpoint(): Promise<void> {
     while (true) {
-      for (const dbtab of this.dbCachePin) {
-        const data = JSON.stringify(this.dbCache.get(dbtab));
+      for (const dbtab of this.dbCachePin.keys()) {
         const [db, tab] = dbtab.split("@")
-        const dbdir = path.join(this.dbDir, db)
+        const content = this.dbsCache.get(db)?.get(tab)!;
+        const dbdir = path.join(this.dbDir, db);
         if (!fs.existsSync(dbdir)) {
           fs.mkdirSync(dbdir, { recursive: true });
         }
+        const data = JSON.stringify(content);
         fs.writeFileSync(path.join(dbdir, `${tab}.json`), data, { encoding: 'utf-8' });
-        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', dbtab:'${dbtab}' content: '${data}'`);
+        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', tab:'${tab}', content: '${data}'`);
       }
       this.dbCachePin.clear();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -52,15 +50,19 @@ export class FileDB extends MemDB {
     for (const db of fs.readdirSync(this.dbDir, { withFileTypes: true })) {
       if (db.isDirectory()) {
         const dbPath = path.join(this.dbDir, db.name);
+        const tablesMap = new Map<string, any>();
+
         for (const table of fs.readdirSync(dbPath, { withFileTypes: true })) {
           if (table.isFile() && table.name.endsWith('.json')) {
             const filePath = path.join(dbPath, table.name);
             const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
             const parsedData = JSON.parse(data) as StoreFormat;
-            const key = `${db.name}@${path.basename(table.name, '.json')}`;
-            this.dbCache.set(key, parsedData);
+            const tableName = path.basename(table.name, '.json');
+
+            tablesMap.set(tableName, parsedData);
           }
         }
+        this.dbsCache.set(db.name, tablesMap);
       }
     }
   }

@@ -1,42 +1,50 @@
 import { StoreFormat } from "./types"
-import { HJDBErrorCode, HJDBError, HJDBErrorMsg } from "./error"
-
+import { HJDBErrorCode, HJDBError } from "./error"
 
 export class MemDB {
-  protected readonly dbCache = new Map<string, StoreFormat>();
+  protected readonly dbsCache = new Map<string, Map<string, StoreFormat>>();
+  protected readonly dbTabsCache = new Map<string, StoreFormat>();
 
   getDbs() {
-    return [...this.dbCache.keys()]
+    return [...this.dbsCache.keys()]
   }
 
   getTabs(db: string): string[] {
-    const tabs = [... this.dbCache.keys()].filter(k => k.split("@")[0] === db)
-    if (tabs.length === 0) {
-      throw new HJDBError(HJDBErrorCode.HJDB002);
+    if (this.dbsCache.get(db)) {
+      return [...this.dbsCache.get(db)?.keys()!]
+    } else {
+      throw HJDBError.new(HJDBErrorCode.HJDB002);
     }
-    return [... this.dbCache.keys()].filter(k => k.split("@")[0] === db).map(k => k.split("@")[1])
   }
 
-  query(db: string, tab: string) {
-    const dbtabpath = `${db}@${tab}`;
-    return this.dbCache.get(dbtabpath) ?? null;
+  query(db: string, tab: string): StoreFormat {
+    if (this.dbsCache.get(db)) {
+      const dbCache = this.dbsCache.get(db)!;
+      if (dbCache.get(tab)) {
+        return dbCache.get(tab)!
+      } else {
+        throw HJDBError.new(HJDBErrorCode.HJDB001);
+      }
+    } else {
+      throw HJDBError.new(HJDBErrorCode.HJDB002);
+    }
   }
 
   delete(db: string, tab: string) {
-    const dbtabpath = `${db}@${tab}`;
-    this.dbCache.delete(dbtabpath);
+    this.dbsCache.get(db)?.delete(tab);
   }
 
   update(db: string, tab: string, data: object) {
-    const dbtabpath = `${db}@${tab}`;
-    var storeData = this.dbCache.get(dbtabpath);
-    if (storeData) {
-      storeData.mts = (new Date()).getTime();
-      storeData.data = data;
+    if (this.dbsCache.get(db) === undefined) {
+      this.dbsCache.set(db, new Map())
+    }
+
+    if (this.dbsCache.get(db)?.get(tab)) {
+      this.dbsCache.get(db)!.get(tab)!.data = data
+      this.dbsCache.get(db)!.get(tab)!.mts = (new Date()).getTime();
     } else {
       const ts = (new Date()).getTime();
-      storeData = { cts: ts, mts: ts, data: data };
+      this.dbsCache.get(db)!.set(tab, { cts: ts, mts: ts, data: data })
     }
-    this.dbCache.set(dbtabpath, storeData);
   }
 }
