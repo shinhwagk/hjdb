@@ -52,15 +52,15 @@ const handleHJDB = async (req: http.IncomingMessage, res: http.ServerResponse) =
   const dbms = storeType === "file" ? filedb : memdb;
   try {
     if (parts.length === 1 && req.method === "GET") {
+      console.log("sss")
       return sendResp(res, { state: 'ok', data: dbms.getDbs() });
-    } else if (parts.length >= 2) {
+    } else if (parts.length == 2 && req.method === "GET") {
       const db = parts[1];
-      if (parts.length === 2 && req.method === "GET") {
-        const tabs = dbms.getTabs(db);
-        return sendResp(res, { state: 'ok', data: tabs });
-      }
+      const tabs = dbms.getTabs(db);
+      return sendResp(res, { state: 'ok', data: tabs });
     } else if (parts.length === 3) {
       const db = parts[1], tab = parts[2];
+      console.log(parts)
       return await handleTableOperations(req, res, dbms, db, tab);
     }
   } catch (e) {
@@ -72,8 +72,13 @@ async function handleTableOperations(req: http.IncomingMessage, res: http.Server
   try {
     switch (req.method) {
       case 'GET':
+        console.log(1)
         sendResp(res, { state: 'ok', data: dbms.query(db, tab) });
+        console.log(2)
+
         metric.inc('query', dbms.getStore(), db, tab, 1);
+        console.log(3)
+
         return
       case 'POST':
         const data = JSON.parse(await readReqBody(req));
