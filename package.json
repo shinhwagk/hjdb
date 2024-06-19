@@ -1,7 +1,7 @@
 {
   "name": "hjdb",
   "version": "1.0.0",
-  "description": "each db is a json file",
+  "description": "a simple json database by http",
   "main": "main.js",
   "scripts": {
     "compile": "tsc -p .",
@@ -10,11 +10,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@eslint/js": "^9.5.0",
     "@types/node": "^20.14.2",
     "@types/typescript": "^2.0.0",
-    "eslint": "^9.5.0",
-    "globals": "^15.6.0",
     "typescript-eslint": "^7.13.1"
   }
 }
