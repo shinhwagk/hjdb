@@ -6,7 +6,7 @@ WORKDIR /build
 COPY tsconfig.json .
 
 COPY src/*.ts .
-RUN npm run compile
+RUN tsc -p .
 
 ######################################
 
