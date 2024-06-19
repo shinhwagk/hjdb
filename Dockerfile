@@ -1,12 +1,9 @@
 FROM node:22 as builder
-
-RUN npm i -g typescript
-
 WORKDIR /build
-COPY tsconfig.json .
-
-COPY src/*.ts .
-RUN tsc -p .
+COPY tsconfig.json package.json .
+RUN npm i
+COPY src src
+RUN npm run compile
 
 ######################################
 
