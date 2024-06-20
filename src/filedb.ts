@@ -29,7 +29,7 @@ export class FileDB extends MemDB {
     }
     if (!this.dbsCache.has(db)) {
       fs.unlinkSync(path.join(this.dbDir, db))
-      console.log("tabs size == 0, rm db dir.")
+      console.log("remove db: " + db)
     }
   }
 
@@ -42,17 +42,17 @@ export class FileDB extends MemDB {
     while (true) {
       for (const dbtab of this.dbCachePin) {
         const [db, tab] = dbtab.split("@")
-        if (this.dbsCache.get(db)?.get(tab)){
-            const content =  this.dbsCache.get(db)?.get(tab);
-            const dbdir = path.join(this.dbDir, db);
-            if (!fs.existsSync(dbdir)) {
-         fs.mkdirSync(dbdir, { recursive: true });
-            }
-            const data = JSON.stringify(content);
-            fs.writeFileSync(path.join(dbdir, `${tab}.json`), data, { encoding: 'utf-8' });
-            console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', tab:'${tab}', content: '${data}'`);
+        if (this.dbsCache.get(db)?.get(tab)) {
+          const content = this.dbsCache.get(db)?.get(tab);
+          const dbdir = path.join(this.dbDir, db);
+          if (!fs.existsSync(dbdir)) {
+            fs.mkdirSync(dbdir, { recursive: true });
           }
+          const data = JSON.stringify(content);
+          fs.writeFileSync(path.join(dbdir, `${tab}.json`), data, { encoding: 'utf-8' });
+          console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', tab:'${tab}', content: '${data}'`);
         }
+      }
       this.dbCachePin.clear();
       await new Promise(resolve => setTimeout(resolve, 1000));
     }

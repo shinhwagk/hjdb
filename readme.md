@@ -4,7 +4,7 @@
 ```sh
 # for store type 'file': -v /data:/var/lib/hjdb
 # example: /var/lib/hjdb/db1/tab1.json
-docker run -d --name hjdb -p 8000:8000 -v /data:/var/lib/hjdb shinhwagk/hjdb:latest
+docker run -d --name hjdb -p 8000:8000 -v /data:/var/lib/hjdb shinhwagk/hjdb:0.5.9
 ```
 
 ## Api
