@@ -22,22 +22,22 @@ curl -s -XGET http://localhost:8000/memory/db1 | jq
 curl -s -XGET http://localhost:8000/file/db1 | jq
 
 # update table to memory
-curl -s -XPOST http://localhost:8000/memory/db1/tab1 -d '{"a":"dfdf2"}' | jq
+curl -s -XPOST http://localhost:8000/memory/db1/sch1/tab1 -d '{"a":"dfdf2"}' | jq
 
 # update table to file
-curl -s -XPOST http://localhost:8000/file/db1/tab1 -d '{"a":"dfdf2"}' | jq
+curl -s -XPOST http://localhost:8000/file/db1/sch1/tab1 -d '{"a":"dfdf2"}' | jq
 
 # delete table from memory
-curl -s -XDELETE http://localhost:8000/memory/db1/tab1 | jq
+curl -s -XDELETE http://localhost:8000/memory/db1/sch1/tab1 | jq
 
 # delete table from file
-curl -s -XDELETE http://localhost:8000/file/db1/tab1 | jq
+curl -s -XDELETE http://localhost:8000/file/db1/sch1/tab1 | jq
 
 # query table from memory
-curl -s -XGET http://localhost:8000/memory/db1/tab1 | jq
+curl -s -XGET http://localhost:8000/memory/db1/sch1/tab1 | jq
 
 # query table from file
-curl -s -XGET http://localhost:8000/file/db1/tab1 | jq
+curl -s -XGET http://localhost:8000/file/db1/sch1/tab1 | jq
 ```
 
 # prometheus exporter

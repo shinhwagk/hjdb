@@ -4,7 +4,7 @@ import { MemDB } from "./memdb";
 import { FileDB } from "./filedb";
 import { Metric } from "./metric";
 
-import { ResponseData, DBStore } from "./types"
+import { ResponseData, DBStore, IDB } from "./types"
 import { HJDBError } from "./error"
 
 function sendResp(res: http.ServerResponse, payload: ResponseData) {
@@ -32,7 +32,7 @@ function readReqBody(req: http.IncomingMessage): Promise<string> {
   })
 }
 
-const filedb = new FileDB('/var/lib/hjdb');
+const filedb: IDB = new FileDB('/var/lib/hjdb');
 const memdb = new MemDB();
 const metric = new Metric();
 
@@ -55,33 +55,37 @@ const handleHJDB = async (req: http.IncomingMessage, res: http.ServerResponse) =
       return sendResp(res, { state: 'ok', data: dbms.getDbs() });
     } else if (parts.length == 2 && req.method === "GET") {
       const db = parts[1];
-      const tabs = dbms.getTabs(db);
-      return sendResp(res, { state: 'ok', data: tabs });
+      const schs = dbms.getSchs(db);
+      return sendResp(res, { state: 'ok', data: schs });
     } else if (parts.length === 3) {
-      const db = parts[1], tab = parts[2];
-      return await handleTableOperations(req, res, dbms, db, tab);
+      const db = parts[1], sch = parts[2];
+      const tabs = dbms.getTabs(db, sch)
+      return sendResp(res, { state: 'ok', data: tabs });
+    } else if (parts.length === 4) {
+      const db = parts[1], sch = parts[2], tab = parts[3];
+      return await handleTableOperations(req, res, dbms, db, sch, tab);
     }
   } catch (e) {
     return sendError(res, e);
   }
 }
 
-async function handleTableOperations(req: http.IncomingMessage, res: http.ServerResponse, dbms: MemDB, db: string, tab: string) {
+async function handleTableOperations(req: http.IncomingMessage, res: http.ServerResponse, dbms: IDB, db: string, sch: string, tab: string) {
   try {
     switch (req.method) {
       case 'GET':
-        sendResp(res, { state: 'ok', data: dbms.query(db, tab) });
-        metric.inc('query', dbms.getStore(), db, tab, 1);
+        sendResp(res, { state: 'ok', data: dbms.query(db, sch, tab) });
+        metric.inc('query', dbms.getStore(), db, sch, tab, 1);
         return
       case 'POST':
         const data = JSON.parse(await readReqBody(req));
-        dbms.update(db, tab, data);
+        dbms.update(db, sch, tab, data);
         sendResp(res, { state: 'ok' });
-        return metric.inc('update', dbms.getStore(), db, tab, 1);
+        return metric.inc('update', dbms.getStore(), db, sch, tab, 1);
       case 'DELETE':
-        dbms.delete(db, tab);
+        dbms.delete(db, sch, tab);
         sendResp(res, { state: 'ok' });
-        return metric.inc('delete', dbms.getStore(), db, tab, 1);
+        return metric.inc('delete', dbms.getStore(), db, sch, tab, 1);
       default:
         new Error('Method Not Allowed');
     }

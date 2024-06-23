@@ -17,41 +17,40 @@ export class FileDB extends MemDB {
     return 'file'
   }
 
-  query(db: string, tab: string): object {
-    return super.query(db, tab);
+  query(db: string, sch: string, tab: string): object {
+    return super.query(db, sch, tab);
   }
 
-  delete(db: string, tab: string) {
-    super.delete(db, tab);
-    this.dbCachePin.delete(`${db}@${tab}`)
+  delete(db: string, sch: string, tab: string) {
+    super.delete(db, sch, tab);
+    this.dbCachePin.delete(`${db}@${sch}@${tab}`)
     if (fs.existsSync(path.join(this.dbDir, db, `${tab}.json`))) {
       fs.unlinkSync(path.join(this.dbDir, db, `${tab}.json`));
     }
-    if (!this.dbsCache.has(db)) {
+    if (!this.databasesCache.has(db)) {
       fs.unlinkSync(path.join(this.dbDir, db))
       console.log("remove db: " + db)
     }
   }
 
-  update(db: string, tab: string, data: object) {
-    super.update(db, tab, data);
-    this.dbCachePin.add(`${db}@${tab}`);
+  update(db: string, sch: string, tab: string, data: object) {
+    super.update(db, sch, tab, data);
+    this.dbCachePin.add(`${db}@${sch}@${tab}`);
   }
 
   private async checkpoint(): Promise<void> {
     while (true) {
       for (const dbtab of this.dbCachePin) {
-        const [db, tab] = dbtab.split("@")
-        if (this.dbsCache.get(db)?.get(tab)) {
-          const content = this.dbsCache.get(db)?.get(tab);
-          const dbdir = path.join(this.dbDir, db);
-          if (!fs.existsSync(dbdir)) {
-            fs.mkdirSync(dbdir, { recursive: true });
-          }
-          const data = JSON.stringify(content);
-          fs.writeFileSync(path.join(dbdir, `${tab}.json`), data, { encoding: 'utf-8' });
-          console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', tab:'${tab}', content: '${data}'`);
+        const [db, sch, tab] = dbtab.split("@")
+        const content = this.databasesCache.get(db)?.get(sch)?.get(tab)!;
+        const schDir = path.join(this.dbDir, db, sch);
+        if (!fs.existsSync(schDir)) {
+          fs.mkdirSync(schDir, { recursive: true });
         }
+        const data = JSON.stringify(content);
+        fs.writeFileSync(path.join(schDir, `${tab}.json`), data, { encoding: 'utf-8' });
+        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', sch:'${sch}',tab:'${tab}', content: '${data}'`);
+
       }
       this.dbCachePin.clear();
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -62,19 +61,19 @@ export class FileDB extends MemDB {
     for (const db of fs.readdirSync(this.dbDir, { withFileTypes: true })) {
       if (db.isDirectory()) {
         const dbPath = path.join(this.dbDir, db.name);
-        const tablesMap = new Map<string, object>();
+        for (const sch of fs.readdirSync(dbPath, { withFileTypes: true })) {
+          if (sch.isDirectory()) {
+            const schPath = path.join(dbPath, sch.name);
+            for (const tab of fs.readdirSync(schPath, { withFileTypes: true })) {
+              if (tab.isFile() && tab.name.endsWith('.json')) {
+                const tabPath = path.join(schPath, tab.name);
+                const data = JSON.parse(fs.readFileSync(tabPath, { encoding: 'utf-8' })) as object;
+                super.update(db.name, sch.name, tab.name.split(".")[0], data);
+              }
+            }
 
-        for (const table of fs.readdirSync(dbPath, { withFileTypes: true })) {
-          if (table.isFile() && table.name.endsWith('.json')) {
-            const filePath = path.join(dbPath, table.name);
-            const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
-            const parsedData = JSON.parse(data) as object;
-            const tableName = path.basename(table.name, '.json');
-
-            tablesMap.set(tableName, parsedData);
           }
         }
-        this.dbsCache.set(db.name, tablesMap);
       }
     }
   }

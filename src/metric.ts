@@ -7,8 +7,8 @@ export class Metric {
   metricError = 0
 
 
-  public inc(type: 'update' | 'query' | 'delete', store: DBStore, db: string, tab: string, val: number) {
-    const key = `${store}@${db}@${tab}`;
+  public inc(type: 'update' | 'query' | 'delete', store: DBStore, db: string, sch: string, tab: string, val: number) {
+    const key = `${store}@${db}@${sch}@${tab}`;
     const map = this._getMap(type);
     const currentVal = map.get(key) || 0;
     map.set(key, currentVal + val);
@@ -34,8 +34,8 @@ export class Metric {
   private formatMetrics(name: string, map: Map<string, number>) {
     const metricLines: string[] = [];
     for (const [key, val] of map.entries()) {
-      const [store, db, tab] = key.split("@");
-      metricLines.push(`${name}{store="${store}", db="${db}", tab="${tab}"} ${val}`);
+      const [store, db, sch, tab] = key.split("@");
+      metricLines.push(`${name}{store="${store}", db="${db}", sch="${sch}", tab="${tab}"} ${val}`);
     }
     if (metricLines.length >= 1) {
       metricLines.splice(0, 0, `# HELP ${name} Total number of ${name} operations`, `# TYPE ${name} counter`);

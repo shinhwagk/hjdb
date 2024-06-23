@@ -3,6 +3,8 @@ export enum HJDBErrorMsg {
     HJDB002 = "database not exists.",
     HJDB003 = "invalid database name.",
     HJDB004 = "invalid table name.",
+    HJDB005 = "schema not exists.",
+    HJDB006 = "invalid schema name.",
 }
 
 export enum HJDBErrorCode {
@@ -10,6 +12,8 @@ export enum HJDBErrorCode {
     HJDB002 = "HJDB-002",
     HJDB003 = "HJDB-003",
     HJDB004 = "HJDB-004",
+    HJDB005 = "HJDB-005",
+    HJDB006 = "HJDB-006",
 }
 
 const ErrorCodeToMessageMap: { [key in HJDBErrorCode]: HJDBErrorMsg } = {
@@ -17,6 +21,8 @@ const ErrorCodeToMessageMap: { [key in HJDBErrorCode]: HJDBErrorMsg } = {
     [HJDBErrorCode.HJDB002]: HJDBErrorMsg.HJDB002,
     [HJDBErrorCode.HJDB003]: HJDBErrorMsg.HJDB003,
     [HJDBErrorCode.HJDB004]: HJDBErrorMsg.HJDB004,
+    [HJDBErrorCode.HJDB005]: HJDBErrorMsg.HJDB005,
+    [HJDBErrorCode.HJDB006]: HJDBErrorMsg.HJDB006,
 };
 
 export class HJDBError extends Error {
