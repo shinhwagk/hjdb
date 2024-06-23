@@ -41,7 +41,7 @@ export class MemDB implements IDB {
       if (tab) {
         this.validateName(tab, HJDBErrorCode.HJDB005)
         const tabCache = schCache.get(tab)
-        if (!tab) {
+        if (!tabCache) {
           throw HJDBError.new(HJDBErrorCode.HJDB001)
         }
       }
