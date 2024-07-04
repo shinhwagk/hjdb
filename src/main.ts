@@ -112,3 +112,11 @@ const handleRequest = async (req: http.IncomingMessage, res: http.ServerResponse
 http.createServer(handleRequest).listen(8000, () => {
   console.log('Server running on http://:8000');
 });
+
+
+const server = Bun.serve({
+  port: 3000,
+  fetch(request) {
+    return new Response("Welcome to Bun!");
+  },
+});

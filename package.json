@@ -1,17 +1,6 @@
 {
-  "name": "hjdb",
-  "version": "1.0.0",
-  "description": "a simple json database by http",
-  "main": "main.js",
-  "scripts": {
-    "compile": "tsc -p .",
-    "start": "node dist/main.js"
-  },
-  "author": "",
-  "license": "ISC",
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.14.2",
-    "@types/typescript": "^2.0.0",
-    "typescript-eslint": "^7.13.1"
+    "@types/bun": "^1.1.6"
   }
 }
