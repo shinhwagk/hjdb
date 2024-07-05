@@ -35,11 +35,9 @@ export class FileDB extends MemDB {
     }
 
     if (super.getTabs(db, sch).length === 0) {
+      await rmdir(path.join(this.dbDir, db, sch))
       if (super.getSchs(db).length === 0) {
-        await rmdir(path.join(this.dbDir, db, sch))
-        if (super.getDbs().length === 0) {
-          await rmdir(path.join(this.dbDir, db))
-        }
+        await rmdir(path.join(this.dbDir, db))
       }
     }
   }

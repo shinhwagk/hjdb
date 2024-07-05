@@ -63,11 +63,9 @@ export class MemDB implements IDB {
     this.databasesCache.get(db)?.get(sch)?.delete(tab)
 
     if (this.getTabs(db, sch).length === 0) {
+      this.databasesCache.get(db)?.delete(sch)
       if (this.getSchs(db).length === 0) {
-        this.databasesCache.get(db)?.delete(sch)
-        if (this.getDbs().length === 0) {
-          this.databasesCache.delete(db)
-        }
+        this.databasesCache.delete(db)
       }
     }
   }
