@@ -38,16 +38,18 @@ const handleHJDB = async (req: Request): Promise<Response> => {
   const parts = url.pathname.split('/').filter(p => p.length !== 0);
   if (!parts) return sendError(new Error('Invalid request'));
 
+  const method = req.method
+
   const storeType = parts[0] as DBStore;
   const dbms = storeType === "file" ? filedb : memdb;
   try {
-    if (parts.length === 1 && req.method === "GET") {
+    if (parts.length === 1 && method === "GET") {
       return sendResp({ state: 'ok', data: dbms.getDbs() });
-    } else if (parts.length == 2 && req.method === "GET") {
+    } else if (parts.length == 2 && method === "GET") {
       const db = parts[1];
       const schs = dbms.getSchs(db);
       return sendResp({ state: 'ok', data: schs });
-    } else if (parts.length === 3 && req.method == "GET") {
+    } else if (parts.length === 3 && method == "GET") {
       const db = parts[1], sch = parts[2];
       const tabs = dbms.getTabs(db, sch)
       return sendResp({ state: 'ok', data: tabs });
@@ -60,10 +62,12 @@ const handleHJDB = async (req: Request): Promise<Response> => {
   } catch (e) {
     return sendError(e);
   }
-  return new Response()
 }
 
 async function handleTableOperations(req: Request, dbms: IDB, db: string, sch: string, tab: string): Promise<Response> {
+  const url = new URL(req.url);
+  const searchParams = new URLSearchParams(url.search);
+
   try {
     if (req.method == "GET") {
       const resp = sendResp({ state: 'ok', data: dbms.query(db, sch, tab) });
@@ -72,11 +76,17 @@ async function handleTableOperations(req: Request, dbms: IDB, db: string, sch: s
     } else if (req.method == "POST") {
       const data = await (await req.blob()).json();
       dbms.update(db, sch, tab, data);
+      if (searchParams.get("asynccommit") === "false" && dbms instanceof FileDB) {
+        await dbms.checkpoint();
+      }
       const resp = sendResp({ state: 'ok' });
       metric.inc('update', dbms.getStore(), db, sch, tab, 1);
       return resp
     } else if (req.method == "DELETE") {
-      dbms.delete(db, sch, tab);
+      await dbms.delete(db, sch, tab);
+      if (searchParams.get("asynccommit") === "false" && dbms instanceof FileDB) {
+        await dbms.checkpoint();
+      }
       const resp = sendResp({ state: 'ok' });
       metric.inc('delete', dbms.getStore(), db, sch, tab, 1);
       return resp

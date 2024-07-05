@@ -14,14 +14,12 @@ export class MemDB implements IDB {
   }
 
   getSchs(db: string): string[] {
-    this.checkObjectValidate(db)
-    return [...this.databasesCache.get(db)!.keys()]
+    return [...(this.databasesCache.get(db)?.keys() ?? [])]
 
   }
 
   getTabs(db: string, sch: string): string[] {
-    this.checkObjectValidate(db, sch)
-    return [...this.databasesCache.get(db)!.get(sch)!.keys()]
+    return [...(this.databasesCache.get(db)?.get(sch)?.keys() ?? [])]
   }
 
   checkObjectValidate(db: string, sch?: string, tab?: string) {
@@ -64,12 +62,13 @@ export class MemDB implements IDB {
 
     this.databasesCache.get(db)?.get(sch)?.delete(tab)
 
-    if (this.databasesCache.get(db)?.get(sch)?.size ?? 0 >= 1) {
-      this.databasesCache.get(db)?.delete(sch)
-    }
-
-    if (this.databasesCache.get(db)?.size || 0 >= 1) {
-      this.databasesCache.delete(db)
+    if (this.getTabs(db, sch).length === 0) {
+      if (this.getSchs(db).length === 0) {
+        this.databasesCache.get(db)?.delete(sch)
+        if (this.getDbs().length === 0) {
+          this.databasesCache.delete(db)
+        }
+      }
     }
   }
 
@@ -80,9 +79,8 @@ export class MemDB implements IDB {
 
     if (!this.databasesCache.has(db)) {
       this.databasesCache.set(db, new Map())
-    }
-
-    if (!this.databasesCache.get(db)?.has(sch)) {
+      this.databasesCache.get(db)?.set(sch, new Map())
+    } else if (!this.databasesCache.get(db)?.has(sch)) {
       this.databasesCache.get(db)?.set(sch, new Map())
     }
 
