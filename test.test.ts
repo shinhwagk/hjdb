@@ -32,6 +32,10 @@ const testCases: TestCase[] = [
     { method: "GET", path: "/memory/db1/sch1", expected: { state: "ok", data: ["tab1"] } },
     { method: "GET", path: "/file/db1/sch1/tab1", expected: { state: "ok", data: { "a": 1 } } },
     { method: "GET", path: "/memory/db1/sch1/tab1", expected: { state: "ok", data: { "a": 1 } } },
+    { method: "POST", path: "/file/db1/sch1/tab1?asynccommit=false", data: { "a": 2 }, expected: { state: "ok" } },
+    { method: "POST", path: "/memory/db1/sch1/tab1", data: { "a": 2 }, expected: { state: "ok" } },
+    { method: "GET", path: "/file/db1/sch1/tab1", expected: { state: "ok", data: { "a": 2 } } },
+    { method: "GET", path: "/memory/db1/sch1/tab1", expected: { state: "ok", data: { "a": 2 } } },
     { method: "DELETE", path: "/file/db1/sch1/tab1?asynccommit=false", expected: { state: "ok" } },
     { method: "DELETE", path: "/memory/db1/sch1/tab1", expected: { state: "ok" } },
 ];
