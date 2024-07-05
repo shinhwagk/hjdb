@@ -55,9 +55,7 @@ function runTests(baseUrl: string, testCases: TestCase[]) {
                 })).json()
             } else if (tc.method === "DELETE") {
                 res = await (await fetch(`${baseUrl}${tc.path}`, { method: 'DELETE' })).json()
-                console.log(res)
             }
-
 
             if (res) {
                 expect(tc.expected.state).toBe(res.state);
