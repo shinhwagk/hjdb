@@ -30,42 +30,30 @@ export class Metric {
     }
   }
 
-  private formatMetrics(name: string, map: Map<string, number>) {
-    const metricLines: string[] = [];
-    for (const [key, val] of map.entries()) {
+  private *formatMetrics(name: string, map: Map<string, number>): IterableIterator<string> {
+    yield `# HELP ${name} Total number of ${name} operations`;
+    yield `# TYPE ${name} counter`;
+    for (const [key, value] of map.entries()) {
       const [store, db, sch, tab] = key.split("@");
-      metricLines.push(`${name}{store="${store}", db="${db}", sch="${sch}", tab="${tab}"} ${val}`);
+      yield `${name}{store="${store}", db="${db}", sch="${sch}", tab="${tab}"} ${value}`;
     }
-    if (metricLines.length >= 1) {
-      metricLines.splice(0, 0, `# HELP ${name} Total number of ${name} operations`, `# TYPE ${name} counter`);
-    }
-    return metricLines
   }
 
-  private formatErrorMetric() {
-    if (this.metricError >= 1) {
-      return [
-        `# HELP hjdb_error Total number of hjdb_error operations`,
-        `# TYPE hjdb_errorcounter`,
-        `hjdb_error ${this.metricError}`
-      ]
-    } else { return [] }
-  }
-
-  public metrics(): string {
-    const metrics: string[] = [];
-    const formatMetrics = [
-      this.formatMetrics('hjdb_update', this.metricTabUpdate),
-      this.formatMetrics('hjdb_query', this.metricTabUpdate),
-      this.formatMetrics('hjdb_delete', this.metricTabUpdate), this.formatErrorMetric()
-    ]
-    for (const formatMetric of formatMetrics) {
-      for (const metric of formatMetric) {
-        metrics.push(metric);
-      }
+  *metrics() {
+    if (this.metricTabUpdate.size > 0) {
+      yield* this.formatMetrics('hjdb_update', this.metricTabUpdate);
     }
-
-    return metrics.length >= 1 ? metrics.join("\n") + "\n" : "";
+    if (this.metricTabQuery.size > 0) {
+      yield* this.formatMetrics('hjdb_query', this.metricTabQuery);
+    }
+    if (this.metricTabDelete.size > 0) {
+      yield* this.formatMetrics('hjdb_delete', this.metricTabDelete);
+    }
+    if (this.metricError > 0) {
+      yield `# HELP hjdb_error Total number of hjdb_error operations`;
+      yield `# TYPE hjdb_error counter`;
+      yield `hjdb_error ${this.metricError}`;
+    }
   }
 }
 

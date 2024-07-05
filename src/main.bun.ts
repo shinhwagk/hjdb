@@ -6,7 +6,7 @@ import { HJDBError } from "./error"
 
 const filedb: FileDB = new FileDB('/var/lib/hjdb');
 const memdb = new MemDB();
-const metric = new Metric();
+const promMetric = new Metric();
 
 function sendResp(payload: ResponseData) {
   return new Response(JSON.stringify(payload), {
@@ -18,7 +18,7 @@ function sendResp(payload: ResponseData) {
 }
 
 function sendError(e: unknown): Response {
-  metric.incErr();
+  promMetric.incErr();
   if (e instanceof HJDBError) {
     return sendResp({ state: 'err', errmsg: e.message, errcode: e.errorCode });
   } else if (e instanceof Error) {
@@ -29,8 +29,21 @@ function sendError(e: unknown): Response {
 }
 
 const handleMetric = (): Response => {
-  return new Response(metric.metrics(), { status: 200, headers: { 'Content-Type': 'text/plain' } })
-}
+  const stream = new ReadableStream({
+    start: (controller) => {
+      try {
+        for (const metric of promMetric.metrics()) {
+          controller.enqueue(metric + "\n");
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    }
+  });
+
+  return new Response(stream, { status: 200, headers: { 'Content-Type': 'text/plain' } });
+};
 
 const handleHJDB = async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
@@ -71,7 +84,7 @@ async function handleTableOperations(req: Request, dbms: IDB, db: string, sch: s
   try {
     if (req.method == "GET") {
       const resp = sendResp({ state: 'ok', data: dbms.query(db, sch, tab) });
-      metric.inc('query', dbms.getStore(), db, sch, tab, 1);
+      promMetric.inc('query', dbms.getStore(), db, sch, tab, 1);
       return resp
     } else if (req.method == "POST") {
       const data = await (await req.blob()).json();
@@ -80,7 +93,7 @@ async function handleTableOperations(req: Request, dbms: IDB, db: string, sch: s
         await dbms.checkpoint();
       }
       const resp = sendResp({ state: 'ok' });
-      metric.inc('update', dbms.getStore(), db, sch, tab, 1);
+      promMetric.inc('update', dbms.getStore(), db, sch, tab, 1);
       return resp
     } else if (req.method == "DELETE") {
       await dbms.delete(db, sch, tab);
@@ -88,7 +101,7 @@ async function handleTableOperations(req: Request, dbms: IDB, db: string, sch: s
         await dbms.checkpoint();
       }
       const resp = sendResp({ state: 'ok' });
-      metric.inc('delete', dbms.getStore(), db, sch, tab, 1);
+      promMetric.inc('delete', dbms.getStore(), db, sch, tab, 1);
       return resp
     } else {
       return sendError(new Error('Method Not Allowed'))

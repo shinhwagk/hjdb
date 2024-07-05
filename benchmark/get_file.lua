@@ -1,15 +1,17 @@
-math.randomseed(os.time())  -- 初始化随机种子
+local counter = 0
 
-function random_segment()
-    local firstChar = string.char(math.random(65, 90))
-    local numberPart = tostring(math.random(1, 100))
-    return firstChar .. numberPart
+function segment(prefix)
+    counter = counter + 1
+    if counter > 1000 then
+        counter = 1
+    end
+    return prefix .. tostring(counter)
 end
 
 function request()
-    local segment1 = random_segment()
-    local segment2 = random_segment()
-    local segment3 = random_segment()
+    local segment1 = segment('db')
+    local segment2 = segment('sch')
+    local segment3 = segment('tab')
     local path = string.format("/file/%s/%s/%s", segment1, segment2, segment3)
 
     wrk.method = "GET"
