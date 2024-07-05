@@ -6,7 +6,6 @@ export class Metric {
   metricTabDelete = new Map<string, number>()
   metricError = 0
 
-
   public inc(type: 'update' | 'query' | 'delete', store: DBStore, db: string, sch: string, tab: string, val: number) {
     const key = `${store}@${db}@${sch}@${tab}`;
     const map = this._getMap(type);
@@ -55,10 +54,16 @@ export class Metric {
 
   public metrics(): string {
     const metrics: string[] = [];
-    metrics.push(...this.formatMetrics('hjdb_update', this.metricTabUpdate));
-    metrics.push(...this.formatMetrics('hjdb_query', this.metricTabQuery));
-    metrics.push(...this.formatMetrics('hjdb_delete', this.metricTabDelete));
-    metrics.push(...this.formatErrorMetric());
+    const formatMetrics = [
+      this.formatMetrics('hjdb_update', this.metricTabUpdate),
+      this.formatMetrics('hjdb_query', this.metricTabUpdate),
+      this.formatMetrics('hjdb_delete', this.metricTabUpdate), this.formatErrorMetric()
+    ]
+    for (const formatMetric of formatMetrics) {
+      for (const metric of formatMetric) {
+        metrics.push(metric);
+      }
+    }
 
     return metrics.length >= 1 ? metrics.join("\n") + "\n" : "";
   }
