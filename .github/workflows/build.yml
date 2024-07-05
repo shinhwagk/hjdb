@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.bun
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/hjdb:${{ env.version }}
           platforms: linux/arm64,linux/amd64

@@ -9,7 +9,7 @@ export class FileDB extends MemDB {
 
   constructor(private readonly dbDir: string) {
     super();
-    this.loadData();
+    // this.loadData();
     this.checkpoint();
   }
 
@@ -44,12 +44,12 @@ export class FileDB extends MemDB {
         const [db, sch, tab] = dbtab.split("@")
         const content = this.databasesCache.get(db)?.get(sch)?.get(tab)!;
         const schDir = path.join(this.dbDir, db, sch);
-        if (!fs.existsSync(schDir)) {
+
+        if (!(await Bun.file(schDir).exists())) {
           fs.mkdirSync(schDir, { recursive: true });
         }
-        const data = JSON.stringify(content);
-        fs.writeFileSync(path.join(schDir, `${tab}.json`), data, { encoding: 'utf-8' });
-        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', sch:'${sch}',tab:'${tab}', content: '${data}'`);
+        await Bun.write(path.join(schDir, `${tab}.json`), JSON.stringify(content));
+        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', sch:'${sch}',tab:'${tab}'`);
 
       }
       this.dbCachePin.clear();
@@ -57,7 +57,7 @@ export class FileDB extends MemDB {
     }
   }
 
-  private async loadData() {
+  public async loadData() {
     for (const db of fs.readdirSync(this.dbDir, { withFileTypes: true })) {
       if (db.isDirectory()) {
         const dbPath = path.join(this.dbDir, db.name);
@@ -67,11 +67,11 @@ export class FileDB extends MemDB {
             for (const tab of fs.readdirSync(schPath, { withFileTypes: true })) {
               if (tab.isFile() && tab.name.endsWith('.json')) {
                 const tabPath = path.join(schPath, tab.name);
-                const data = JSON.parse(fs.readFileSync(tabPath, { encoding: 'utf-8' })) as object;
+                const data = await Bun.file(tabPath).json()
                 super.update(db.name, sch.name, tab.name.split(".")[0], data);
+                console.log(`${new Date().toLocaleString()} loading storage:'file', db:'${db.name}', sch:'${sch.name}',tab:'${tab.name}'`);
               }
             }
-
           }
         }
       }

@@ -4,7 +4,7 @@ import { Metric } from "./metric";
 import { ResponseData, DBStore, IDB } from "./types"
 import { HJDBError } from "./error"
 
-const filedb: IDB = new FileDB('/var/lib/hjdb');
+const filedb: FileDB = new FileDB('/var/lib/hjdb');
 const memdb = new MemDB();
 const metric = new Metric();
 
@@ -35,7 +35,7 @@ const handleMetric = (): Response => {
 const handleHJDB = async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
 
-  const parts = url.pathname.split('/').filter(p => p.length === 0);
+  const parts = url.pathname.split('/').filter(p => p.length !== 0);
   if (!parts) return sendError(new Error('Invalid request'));
 
   const storeType = parts[0] as DBStore;
@@ -47,13 +47,15 @@ const handleHJDB = async (req: Request): Promise<Response> => {
       const db = parts[1];
       const schs = dbms.getSchs(db);
       return sendResp({ state: 'ok', data: schs });
-    } else if (parts.length === 3) {
+    } else if (parts.length === 3 && req.method == "GET") {
       const db = parts[1], sch = parts[2];
       const tabs = dbms.getTabs(db, sch)
       return sendResp({ state: 'ok', data: tabs });
     } else if (parts.length === 4) {
       const db = parts[1], sch = parts[2], tab = parts[3];
       return await handleTableOperations(req, dbms, db, sch, tab);
+    } else {
+      return sendError(new Error('Invalid request'));
     }
   } catch (e) {
     return sendError(e);
@@ -63,12 +65,12 @@ const handleHJDB = async (req: Request): Promise<Response> => {
 
 async function handleTableOperations(req: Request, dbms: IDB, db: string, sch: string, tab: string): Promise<Response> {
   try {
-    if (req.method == "GEt") {
+    if (req.method == "GET") {
       const resp = sendResp({ state: 'ok', data: dbms.query(db, sch, tab) });
       metric.inc('query', dbms.getStore(), db, sch, tab, 1);
       return resp
     } else if (req.method == "POST") {
-      const data = JSON.parse(await (await req.blob()).json());
+      const data = await (await req.blob()).json();
       dbms.update(db, sch, tab, data);
       const resp = sendResp({ state: 'ok' });
       metric.inc('update', dbms.getStore(), db, sch, tab, 1);
@@ -98,10 +100,15 @@ const handleRequest = async (req: Request): Promise<Response> => {
   }
 }
 
-const server = Bun.serve({
-  fetch(request) {
-    return handleRequest(request)
-  },
-});
+async function main() {
+  await filedb.loadData()
 
-console.log(`Server running on http://:${server.url.port}`);  
+  const server = Bun.serve({
+    fetch(request) {
+      return handleRequest(request)
+    },
+  });
+  console.log(`HJDB Running On http://:${server.url.port}`);
+}
+
+main()
