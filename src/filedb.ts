@@ -48,14 +48,16 @@ export class FileDB extends MemDB {
   public async checkpoint(): Promise<void> {
     for (const dbtab of this.dbCachePin) {
       const [db, sch, tab] = dbtab.split("@")
-      const content = this.databasesCache.get(db)?.get(sch)?.get(tab)!;
-      const schDir = path.join(this.dbDir, db, sch);
+      const content = this.databasesCache.get(db)?.get(sch)?.get(tab);
+      if (content) {
+        const schDir = path.join(this.dbDir, db, sch);
 
-      if (!(await Bun.file(schDir).exists())) {
-        await mkdir(schDir, { recursive: true });
+        if (!(await Bun.file(schDir).exists())) {
+          await mkdir(schDir, { recursive: true });
+        }
+        await Bun.write(path.join(schDir, `${tab}.json`), JSON.stringify(content));
+        console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', sch:'${sch}', tab:'${tab}'`);
       }
-      await Bun.write(path.join(schDir, `${tab}.json`), JSON.stringify(content));
-      console.log(`${new Date().toLocaleString()} checkpoint storage:'file', db:'${db}', sch:'${sch}', tab:'${tab}'`);
     }
     this.dbCachePin.clear();
   }

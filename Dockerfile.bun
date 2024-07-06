@@ -6,4 +6,4 @@ COPY src/ .
 VOLUME /var/lib/hjdb
 EXPOSE 8000
 
-ENTRYPOINT ["bun", "run", "-p", "8000", "/app/main.bun.ts"]
+ENTRYPOINT ["bun", "run", "-p", "8000", "/app/main.ts"]

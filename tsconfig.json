@@ -1,11 +1,8 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
+    "module": "CommonJS",
     "strict": true,
-    "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
-    "moduleDetection": "force",
   },
   "include": [
     "./src"

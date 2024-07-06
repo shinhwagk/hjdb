@@ -22,30 +22,6 @@ export class MemDB implements IDB {
     return [...(this.databasesCache.get(db)?.get(sch)?.keys() ?? [])]
   }
 
-  checkObjectValidate(db: string, sch?: string, tab?: string) {
-    this.validateName(db, HJDBErrorCode.HJDB003)
-    const dbCache = this.databasesCache.get(db);
-    if (!dbCache) {
-      throw HJDBError.new(HJDBErrorCode.HJDB002)
-    }
-
-    if (sch) {
-      this.validateName(sch, HJDBErrorCode.HJDB006)
-      const schCache = dbCache.get(sch)
-      if (!schCache) {
-        throw HJDBError.new(HJDBErrorCode.HJDB005)
-      }
-
-      if (tab) {
-        this.validateName(tab, HJDBErrorCode.HJDB005)
-        const tabCache = schCache.get(tab)
-        if (!tabCache) {
-          throw HJDBError.new(HJDBErrorCode.HJDB001)
-        }
-      }
-    }
-  }
-
   private validateName(name: string, code: HJDBErrorCode) {
     if (!validateName(name)) {
       throw HJDBError.new(code)
@@ -53,8 +29,22 @@ export class MemDB implements IDB {
   }
 
   query(db: string, sch: string, tab: string): object {
-    this.checkObjectValidate(db, sch, tab)
-    return this.databasesCache.get(db)!.get(sch)!.get(tab)!
+    this.validateName(db, HJDBErrorCode.HJDB003)
+    if (!this.databasesCache.get(db)) {
+      throw HJDBError.new(HJDBErrorCode.HJDB002)
+    } else {
+      this.validateName(sch, HJDBErrorCode.HJDB006)
+      if (!this.databasesCache.get(db)?.get(sch)) {
+        throw HJDBError.new(HJDBErrorCode.HJDB005)
+      } else {
+        this.validateName(tab, HJDBErrorCode.HJDB005)
+        if (!this.databasesCache.get(db)?.get(sch)?.get(tab)) {
+          throw HJDBError.new(HJDBErrorCode.HJDB001)
+        } else {
+          return this.databasesCache.get(db)?.get(sch)?.get(tab) ?? {}
+        }
+      }
+    }
   }
 
   async delete(db: string, sch: string, tab: string) {
