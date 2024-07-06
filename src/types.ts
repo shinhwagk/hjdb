@@ -21,5 +21,5 @@ export interface IDB {
   getTabs(db: string, sch: string): string[]
   update(db: string, sch: string, tab: string, data: object): void
   query(db: string, sch: string, tab: string): object
-  delete(db: string, sch: string, tab: string): void
+  delete(db: string, sch: string, tab: string): Promise<void>
 }

@@ -1,4 +1,4 @@
-import { unlink, mkdir, readdir, rmdir } from 'fs/promises';
+import { rm, mkdir, readdir } from 'fs/promises';
 import * as path from "path"
 
 import { MemDB } from "./memdb"
@@ -26,18 +26,16 @@ export class FileDB extends MemDB {
   }
 
   async delete(db: string, sch: string, tab: string) {
-    super.delete(db, sch, tab);
+    await super.delete(db, sch, tab);
 
     this.dbCachePin.delete(`${db}@${sch}@${tab}`)
 
-    if (await Bun.file(path.join(this.dbDir, db, sch, `${tab}.json`)).exists()) {
-      await unlink(path.join(this.dbDir, db, sch, `${tab}.json`));
-    }
+    await rm(path.join(this.dbDir, db, sch, `${tab}.json`), { force: true });
 
     if (super.getTabs(db, sch).length === 0) {
-      await rmdir(path.join(this.dbDir, db, sch))
+      await rm(path.join(this.dbDir, db, sch), { recursive: true, force: true })
       if (super.getSchs(db).length === 0) {
-        await rmdir(path.join(this.dbDir, db))
+        await rm(path.join(this.dbDir, db), { recursive: true, force: true })
       }
     }
   }

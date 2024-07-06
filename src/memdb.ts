@@ -57,9 +57,7 @@ export class MemDB implements IDB {
     return this.databasesCache.get(db)!.get(sch)!.get(tab)!
   }
 
-  delete(db: string, sch: string, tab: string) {
-    this.checkObjectValidate(db, sch, tab)
-
+  async delete(db: string, sch: string, tab: string) {
     this.databasesCache.get(db)?.get(sch)?.delete(tab)
 
     if (this.getTabs(db, sch).length === 0) {
