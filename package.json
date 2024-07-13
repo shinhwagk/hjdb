@@ -8,5 +8,6 @@
     "@types/bun": "^1.1.6",
     "eslint": "^9.6.0",
     "typescript-eslint": "^7.15.0"
-  }
+  },
+  "name": "hjdb"
 }

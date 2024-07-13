@@ -1,6 +1,6 @@
 FROM node:22 as builder
 WORKDIR /build
-COPY tsconfig.json package.json .
+COPY tsconfig.json package.json ./
 RUN npm i
 COPY src src
 RUN npm run compile
